@@ -1,0 +1,12 @@
+{
+  "name": "sax-practice",
+  "version": "0.1.0",
+  "description": "Browser app to learn saxophone improvisation: backing band, chord-scale guides, guided lessons and live pitch feedback.",
+  "private": true,
+  "scripts": {
+    "start": "python3 -m http.server 8000",
+    "test": "node --test test/*.test.js"
+  },
+  "author": "Andrea Della Corte",
+  "license": "MIT"
+}

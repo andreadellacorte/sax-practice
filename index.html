@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sax Improv Lab</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">♪</span>
+      <div>
+        <h1>Sax Improv Lab</h1>
+        <p class="sub">Backing band · chord-scale guide · live pitch feedback</p>
+      </div>
+    </div>
+    <div class="top-controls">
+      <label class="field">
+        <span>Instrument</span>
+        <select id="instrument"></select>
+      </label>
+      <label class="field">
+        <span>Show notes</span>
+        <select id="notation">
+          <option value="written">Written for my sax</option>
+          <option value="concert">Concert pitch</option>
+        </select>
+      </label>
+      <div class="log" id="log"></div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <h2>Lessons</h2>
+      <ol id="lessons" class="lessons"></ol>
+      <button id="free-practice" class="lesson-free">Free practice</button>
+    </aside>
+
+    <main class="main">
+      <section class="card lesson" id="lesson-card"></section>
+
+      <section class="card transport">
+        <button id="play" class="play" title="Play / stop (Space)">
+          <span class="play-icon">▶</span><span class="play-label">Play</span>
+        </button>
+        <label class="field">
+          <span>Progression</span>
+          <select id="progression"></select>
+        </label>
+        <label class="field">
+          <span>Key <small>(concert)</small></span>
+          <select id="key"></select>
+        </label>
+        <label class="field tempo">
+          <span>Tempo <output id="tempo-out">120</output> bpm</span>
+          <input type="range" id="tempo" min="40" max="260" step="1" value="120">
+        </label>
+        <label class="field">
+          <span>Feel</span>
+          <select id="swing">
+            <option value="0.5">Straight 8ths</option>
+            <option value="0.6">Light swing</option>
+            <option value="0.64">Medium swing</option>
+            <option value="0.68">Hard swing</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Highlight</span>
+          <select id="focus">
+            <option value="roots">Roots</option>
+            <option value="chord">Chord tones</option>
+            <option value="guide">Guide tones (3 & 7)</option>
+            <option value="thirds">3rds</option>
+            <option value="blues">Blues scale</option>
+            <option value="pentatonic">Pentatonic</option>
+            <option value="scale">Whole scale</option>
+          </select>
+        </label>
+        <div class="toggles">
+          <label class="chk"><input type="checkbox" id="count-in" checked> Count-in</label>
+          <label class="chk"><input type="checkbox" id="call-response"> Call &amp; response</label>
+        </div>
+        <div class="mixer">
+          <button class="mute" data-part="drums" aria-pressed="true">Drums</button>
+          <button class="mute" data-part="bass" aria-pressed="true">Bass</button>
+          <button class="mute" data-part="piano" aria-pressed="true">Piano</button>
+          <label class="field vol">
+            <span>Volume</span>
+            <input type="range" id="volume" min="0" max="1" step="0.01" value="0.8">
+          </label>
+        </div>
+      </section>
+
+      <div class="grid">
+        <section class="card now">
+          <div class="now-head">
+            <span class="label">Now</span>
+            <span class="phrase" id="phrase" hidden></span>
+            <span class="bar-count" id="bar-count"></span>
+          </div>
+          <div class="chord-now" id="chord-now">—</div>
+          <div class="chord-concert" id="chord-concert"></div>
+          <div class="beats" id="beats"><i></i><i></i><i></i><i></i></div>
+          <div class="next">Next: <strong id="chord-next">—</strong></div>
+          <div class="lick" id="lick" hidden>
+            <button id="show-lick" class="link">Show notes</button>
+            <span id="lick-notes" hidden></span>
+          </div>
+        </section>
+
+        <section class="card scale">
+          <div class="scale-head">
+            <div>
+              <span class="label">Play these notes</span>
+              <h3 id="scale-name">—</h3>
+            </div>
+            <button id="play-scale" class="ghost">▶ Play scale</button>
+          </div>
+          <svg id="staff" class="staff" role="img" aria-label="Scale on the staff"></svg>
+          <div id="chips" class="chips"></div>
+          <div class="legend">
+            <span><i class="sw target"></i>Target</span>
+            <span><i class="sw tone"></i>Chord tone</span>
+            <span><i class="sw scale"></i>Scale note</span>
+            <span class="hint">Click a note to hear it</span>
+          </div>
+        </section>
+
+        <section class="card mic">
+          <div class="mic-head">
+            <span class="label">Your playing</span>
+            <button id="mic-btn" class="ghost">🎤 Enable mic</button>
+          </div>
+          <div class="mic-note">
+            <div class="detected-fing" id="detected-fing" aria-label="Fingering of the note you're playing"></div>
+            <div class="detected" id="detected">–</div>
+            <div class="detected-info" id="detected-info">Turn on the mic to see which note you're playing.</div>
+          </div>
+          <div class="cents" aria-hidden="true"><div class="cents-center"></div><div class="cents-needle" id="cents-needle"></div></div>
+          <div class="cents-scale"><span>flat</span><span>in tune</span><span>sharp</span></div>
+          <div class="stats" id="stats">
+            <div class="stat"><span>Target</span><div class="meter"><b id="st-target"></b></div><em id="sv-target">–</em></div>
+            <div class="stat"><span>Chord tones</span><div class="meter"><b id="st-tone"></b></div><em id="sv-tone">–</em></div>
+            <div class="stat"><span>Scale</span><div class="meter"><b id="st-scale"></b></div><em id="sv-scale">–</em></div>
+            <div class="stat"><span>Outside</span><div class="meter"><b id="st-out"></b></div><em id="sv-out">–</em></div>
+          </div>
+          <div class="mic-foot">
+            <button id="reset-stats" class="link">Reset stats</button>
+            <span class="hint">🎧 Use headphones so the mic hears you, not the band.</span>
+          </div>
+        </section>
+      </div>
+
+      <section class="card fingerings-card" id="fingerings-card">
+        <div class="chart-head">
+          <span class="label">Fingerings</span>
+          <h3>Keys to press</h3>
+          <span class="hint" id="fingerings-sub"></span>
+        </div>
+        <div class="fing-legend hint">
+          <span><i class="sw on"></i>press</span>
+          <span>Top: palm keys &amp; octave key (thumb) · left hand · right hand · side keys on the right · pinky keys</span>
+        </div>
+        <div id="fingerings" class="fingerings"></div>
+      </section>
+
+      <section class="card chart">
+        <div class="chart-head">
+          <span class="label">Chart</span>
+          <h3 id="chart-title"></h3>
+        </div>
+        <div id="chart" class="chart-grid"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="js/theory.js"></script>
+  <script src="js/pitch.js"></script>
+  <script src="js/fingering.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/lessons.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
