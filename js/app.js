@@ -43,7 +43,7 @@
   const dispPcOffset = () => (written() ? inst().semis : 0);
   const dispMidiOffset = () => (written() ? inst().octaveSemis : 0);
   const chordAt = (i) => state.timeline.chords[i];
-  const displayChord = (chord) => T.buildChord(dispRoot(chord.root), chord.quality);
+  const displayChord = (chord) => T.buildChord(dispRoot(chord.root), chord.quality, chord.scale);
 
   function todayKey() {
     const d = new Date();
@@ -251,7 +251,7 @@
     const tl = state.timeline;
     const chord = chordAt(state.chordIdx);
     $('chord-now').textContent = displayChord(chord).symbol;
-    $('chord-concert').textContent = written() ? `concert ${T.buildChord(chord.root, chord.quality).symbol}` : '';
+    $('chord-concert').textContent = written() ? `concert ${T.buildChord(chord.root, chord.quality, chord.scale).symbol}` : '';
     const next = tl.chords[(state.chordIdx + 1) % tl.chords.length];
     $('chord-next').textContent = displayChord(next).symbol;
   }
@@ -453,7 +453,7 @@
     cr.lick.forEach((note, i) => {
       const reached = cr.mode === 'play' || i <= cr.shown;
       const el = document.createElement('span');
-      el.className = 'cr-chip' + (i === cr.cur ? ' cur' : '') + (i < cr.hits ? ' hit' : '') + (reached ? '' : ' pending');
+      el.className = 'cr-chip' + (i === cr.cur ? (cr.mode === 'listen' ? ' cur call' : ' cur demo') : '') + (i < cr.hits ? ' hit' : '') + (reached ? '' : ' pending');
       el.textContent = (reached && !hide) || i < cr.hits ? crNoteName(note.midi).name : reached ? '?' : '·';
       box.appendChild(el);
     });
@@ -475,15 +475,16 @@
     const wMidi = ev.midi + inst().octaveSemis;
     const { name: spelled, inScale } = spellAgainstScale(dispPc);
     const name = T.pretty(spelled);
+    const who = ev.type === 'call' ? 'call' : 'demo';
     const el = $('cr-note');
     el.innerHTML = hidden ? '?' : `${name}<sup>${oct}</sup>`;
-    el.className = 'demo-note';
+    el.className = `demo-note who-${who}`;
     $('cr-fing').innerHTML = hidden || settings.instrument === 'concert' ? '' : window.Fingering.svg(ev.midi + inst().octaveSemis);
     if (hidden) {
       markDemo(null);
     } else {
-      markDemo(dispPc, wMidi);
-      showNoteExtras(dispPc, spelled, wMidi, inScale);
+      markDemo(dispPc, wMidi, who);
+      showNoteExtras(dispPc, spelled, wMidi, inScale, who);
     }
     renderCr();
   }
@@ -548,8 +549,8 @@
     if (ev.type === 'phrase' && state.callResponse) {
       const p = $('phrase');
       p.hidden = false;
-      p.className = `phrase ${ev.mode}`;
-      p.textContent = ev.mode === 'listen' ? 'LISTEN' : ev.echo ? 'DEMO ANSWERS' : 'YOUR TURN';
+      p.className = `phrase ${ev.mode === 'play' && ev.echo ? 'demo' : ev.mode}`;
+      p.textContent = ev.mode === 'listen' ? 'LISTEN' : ev.echo ? 'DEMO' : 'YOUR TURN';
       state.cr = { lick: ev.lick, mode: ev.mode, echo: ev.echo, shown: -1, cur: null, hits: 0 };
       state.crNote = null;
       $('cr').hidden = false;
@@ -596,14 +597,16 @@
     renderLessonCard();
   }
 
-  // Light up the demo note. Fingering boxes match the exact written octave when shown.
-  function markDemo(pc, wMidi = null) {
+  // Light up the sounding note, coloured by who plays it: 'demo' (sax) or 'call'
+  // (trumpet). Fingering boxes match the exact written octave when shown.
+  function markDemo(pc, wMidi = null, who = 'demo') {
     document.querySelectorAll('.passing').forEach((el) => el.remove());
     document.querySelectorAll('.chip, .staff .head, .fing').forEach((el) => {
       const on = el.classList.contains('fing') && wMidi !== null
         ? Number(el.dataset.wmidi) === wMidi // fingerings differ by octave: exact match only
         : pc !== null && Number(el.dataset.pc) === pc;
-      el.classList.toggle('demo', on);
+      el.classList.toggle('demo', on && who === 'demo');
+      el.classList.toggle('call', on && who === 'call');
     });
   }
 
@@ -620,11 +623,11 @@
   // Make sure a sounding note is visible: a chromatic note that isn't in the scale
   // gets a temporary dashed chip next to the note it leads into, and a note whose
   // octave isn't in the fingering row gets a temporary fingering box.
-  function showNoteExtras(dispPc, name, wMidi, inScale) {
+  function showNoteExtras(dispPc, name, wMidi, inScale, who = 'demo') {
     const label = inScale ? 'this octave' : 'passing';
     if (!inScale) {
       const chip = document.createElement('div');
-      chip.className = 'chip passing demo';
+      chip.className = `chip passing ${who}`;
       chip.innerHTML = '<b></b><small>passing</small>';
       chip.firstChild.textContent = T.pretty(name);
       const chips = $('chips');
@@ -633,7 +636,7 @@
     if (settings.instrument === 'concert' || $('fingerings-card').hidden) return;
     if (document.querySelector(`.fing[data-wmidi="${wMidi}"]`)) return;
     const box = document.createElement('div');
-    box.className = 'fing passing demo';
+    box.className = `fing passing ${who}`;
     box.innerHTML = window.Fingering.svg(wMidi) + `<b></b><small>${label}</small>`;
     box.querySelector('b').textContent = T.pretty(name) + (Math.floor(wMidi / 12) - 1);
     const fings = $('fingerings');

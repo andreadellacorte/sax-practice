@@ -14,6 +14,8 @@
   --warn: #e7b04c;
   --bad: #e06a5a;
   --staff: #cfc3b5;
+  --demo: #6ea8ff;   /* the demo sax */
+  --call: #c18cff;   /* the trumpet call */
   --radius: 14px;
   color-scheme: dark;
 }
@@ -32,6 +34,8 @@
     --tone: #2f8f7c;
     --scale: #d8cdbf;
     --staff: #3d3228;
+    --demo: #2f6fd6;
+    --call: #8a4fd6;
     color-scheme: light;
   }
 }
@@ -215,7 +219,7 @@ h1 { margin: 0; font-size: 18px; }
   padding: 6px 10px;
   font-size: 13px;
 }
-.mute[aria-pressed="true"] { border-color: var(--tone); }
+.mute[aria-pressed="true"] { border-color: var(--text); }
 .mute[aria-pressed="false"] { opacity: 0.45; text-decoration: line-through; }
 
 /* ---------- grid ---------- */
@@ -245,7 +249,7 @@ h1 { margin: 0; font-size: 18px; }
   background: var(--panel-2); border: 1px solid var(--line);
 }
 .beats i.on { background: var(--brass); border-color: var(--brass); }
-.beats.count i.on { background: var(--tone); border-color: var(--tone); }
+.beats.count i.on { background: var(--text); border-color: var(--text); }
 .next { color: var(--muted); }
 .next strong { color: var(--text); font-size: 20px; margin-left: 4px; }
 .bar-count { color: var(--muted); font-size: 13px; }
@@ -254,8 +258,8 @@ h1 { margin: 0; font-size: 18px; }
   font-size: 12px; font-weight: 700; letter-spacing: 0.1em;
   padding: 3px 10px; border-radius: 999px;
 }
-.phrase.listen { background: var(--tone); color: #06201b; }
-.phrase.play { background: var(--brass); color: #1b1307; animation: pulse 1s ease-in-out infinite; }
+.phrase.listen { background: var(--call); color: #1a0b2e; }
+.phrase.play { background: var(--text); color: var(--bg); animation: pulse 1s ease-in-out infinite; }
 @keyframes pulse { 50% { opacity: 0.6; } }
 .lick { margin-top: 10px; font-size: 14px; }
 .lick span { margin-left: 8px; font-weight: 600; }
@@ -392,8 +396,8 @@ h1 { margin: 0; font-size: 18px; }
 /* ---------- lesson demo ---------- */
 
 .demo-btn {
-  background: var(--tone);
-  color: #06201b;
+  background: var(--demo);
+  color: #081a33;
   border: 0;
   border-radius: 999px;
   padding: 6px 16px;
@@ -404,24 +408,27 @@ h1 { margin: 0; font-size: 18px; }
   margin-top: 14px;
   padding: 10px 12px;
   border-radius: 12px;
-  border: 1px solid var(--tone);
-  background: color-mix(in srgb, var(--tone) 10%, var(--panel));
+  border: 1px solid var(--demo);
+  background: color-mix(in srgb, var(--demo) 10%, var(--panel));
 }
 .demo-body { display: flex; align-items: center; gap: 14px; margin-top: 6px; }
 .demo-fing .fing-svg { width: 60px; }
 .demo-fing:empty { display: none; }
-.demo-note { font-size: 40px; font-weight: 700; line-height: 1; color: var(--tone); transition: opacity 0.1s; }
+.demo-note { font-size: 40px; font-weight: 700; line-height: 1; color: var(--demo); transition: opacity 0.1s; }
 .demo-note sup { font-size: 0.4em; }
 .demo-note.rest { opacity: 0.35; }
 .demo-kind { font-size: 13px; margin-top: 4px; }
 .demo-now .hint { margin: 8px 0 0; font-size: 12px; }
-.chip.demo { background: color-mix(in srgb, var(--tone) 40%, var(--panel-2)); transform: scale(1.1); }
-.fing.demo { outline: 3px solid var(--tone); }
-.staff .head.demo { stroke: var(--tone); stroke-width: 4; }
+.chip.demo { background: color-mix(in srgb, var(--demo) 40%, var(--panel-2)); outline: 2px solid var(--demo); transform: scale(1.1); }
+.fing.demo { outline: 3px solid var(--demo); }
+.staff .head.demo { stroke: var(--demo); stroke-width: 4; }
+.chip.call { background: color-mix(in srgb, var(--call) 40%, var(--panel-2)); outline: 2px solid var(--call); transform: scale(1.1); }
+.fing.call { outline: 3px solid var(--call); }
+.staff .head.call { stroke: var(--call); stroke-width: 4; }
 
 /* ---------- call & response ---------- */
 
-.phrase.listen, .phrase.play { white-space: nowrap; }
+.phrase { white-space: nowrap; }
 .cr {
   margin-top: 14px;
   padding: 10px 12px;
@@ -433,7 +440,8 @@ h1 { margin: 0; font-size: 18px; }
 .cr-who { font-weight: 600; font-size: 14px; }
 .cr-hide { font-size: 12px; color: var(--muted); }
 .cr .demo-body { min-height: 64px; }
-.cr .demo-note { color: var(--brass-2); }
+.cr .demo-note.who-call { color: var(--call); }
+.cr .demo-note.who-demo { color: var(--demo); }
 .cr-phrase { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
 .cr-chip {
   min-width: 30px;
@@ -446,11 +454,22 @@ h1 { margin: 0; font-size: 18px; }
   font-size: 14px;
 }
 .cr-chip.pending { color: var(--muted); border-style: dashed; }
-.cr-chip.cur { border-color: var(--brass-2); background: color-mix(in srgb, var(--brass) 30%, var(--panel)); }
+.cr-chip.cur.call { border-color: var(--call); background: color-mix(in srgb, var(--call) 30%, var(--panel)); }
+.cr-chip.cur.demo { border-color: var(--demo); background: color-mix(in srgb, var(--demo) 30%, var(--panel)); }
 .cr-chip.hit { border-color: var(--good); background: color-mix(in srgb, var(--good) 30%, var(--panel)); }
 .cr-status { margin-top: 8px; font-size: 13px; color: var(--muted); }
 .cr-status.done { color: var(--good); font-weight: 600; }
-.chip.passing, .fing.passing { border-style: dashed; border-color: var(--tone); }
-.chip.passing small, .fing.passing small { color: var(--tone); }
+.chip.passing, .fing.passing { border-style: dashed; }
+.chip.passing.demo, .fing.passing.demo { border-color: var(--demo); }
+.chip.passing.call, .fing.passing.call { border-color: var(--call); }
+.chip.passing small, .fing.passing small { color: var(--muted); }
 .chip, .fing { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 .chip.pressed, .fing.pressed { border-color: var(--brass-2); background: color-mix(in srgb, var(--brass) 25%, var(--panel-2)); }
+.sw.demo { background: var(--demo); }
+.sw.call { background: var(--call); }
+.sw.you { background: transparent; border: 2px solid var(--text); }
+.legend-who { display: inline-flex; align-items: center; gap: 4px; }
+.legend-who .sw + .sw, .legend-who .sw:not(:first-child) { margin-left: 8px; }
+/* the mic's "you" highlight: a plain outline, never a fill colour */
+.chip.heard { outline: 2px solid var(--text); }
+.phrase.demo { background: var(--demo); color: #081a33; }

@@ -59,7 +59,7 @@
     const chordAtBeat = (b) => tl.chords[tl.beats[mod(Math.floor(b), tl.totalBeats)].chordIdx];
     const rootPc = (c) => T.pcOf(c.root);
     const tonePc = (c, k) => mod(rootPc(c) + T.QUALITIES[c.quality].tones[k][1], 12);
-    const scalePcs = (c) => T.SCALES[T.QUALITIES[c.quality].scale].steps.map(([, s]) => mod(rootPc(c) + s, 12));
+    const scalePcs = (c) => T.SCALES[c.scale || T.QUALITIES[c.quality].scale].steps.map(([, s]) => mod(rootPc(c) + s, 12));
     const near = (pc, ref, a = lo, b = hi) => T.nearestInRange(pc, ref, a, b);
     const above = (pc, ref) => {
       for (let m = ref + 1; m <= ref + 12; m++) if (mod(m, 12) === pc) return m <= hi ? m : m - 12;

@@ -215,3 +215,26 @@ test('demos play what the lesson asks for', () => {
   const bluesPcs = T.spellScale('Bb', 'blues').map((x) => x.pc);
   for (const n of Demo.build('riff', blues, { ...opts, keyScale: 'blues' })) assert.ok(bluesPcs.includes(T.mod(n.midi, 12)));
 });
+
+test('chord scales respect the key where the key is clear', () => {
+  const majorOf = (k) => new Set(T.spellScale(k, 'ionian').map((n) => n.pc));
+  for (const key of T.KEYS) {
+    const keyPcs = majorOf(key);
+    const inKey = (c) => T.chordPcs(c).scale.every((pc) => keyPcs.has(pc));
+    // ii-V-I and the turnaround are entirely in one major key.
+    for (const pid of ['ii-V-I', 'turnaround']) {
+      for (const c of T.buildTimeline(pid, key).chords) assert.ok(inKey(c), `${pid} ${key} ${c.root}${c.quality}`);
+    }
+    // Autumn cycle: ii V I IV viiø are all in the major key (IV takes Lydian).
+    const autumn = T.buildTimeline('autumn-cycle', key).chords.slice(0, 5);
+    for (const c of autumn) assert.ok(inKey(c), `autumn ${key} ${c.root}${c.quality} ${c.scale}`);
+    assert.equal(autumn[3].scale, 'lydian');
+    // Minor blues bVI7: Lydian dominant keeps the key's natural 2nd (D in C minor).
+    const bVI = T.buildTimeline('minor-blues', key).chords[3];
+    const minorKey = new Set(T.spellScale(key, 'dorian').map((n) => n.pc)); // key's 2nd is in dorian
+    assert.equal(bVI.scale, 'lydianDominant');
+    assert.ok(minorKey.has(T.mod(T.pcOf(bVI.root) + 6, 12)), 'bVI #11 is the key 2nd');
+  }
+  assert.deepEqual(names(T.buildChord('C', 'maj7', 'lydian').scale), ['C', 'D', 'E', 'F#', 'G', 'A', 'B']);
+  assert.equal(T.buildChord('C', 'maj7', 'lydian').scale.find((n) => n.pc === 6).label, '#4');
+});

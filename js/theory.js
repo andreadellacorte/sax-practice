@@ -103,7 +103,10 @@
   const SCALES = {
     ionian: { name: 'Major (Ionian)', steps: [[1, 0], [2, 2], [3, 4], [4, 5], [5, 7], [6, 9], [7, 11]] },
     dorian: { name: 'Dorian', steps: [[1, 0], [2, 2], [3, 3], [4, 5], [5, 7], [6, 9], [7, 10]] },
+    lydian: { name: 'Lydian', steps: [[1, 0], [2, 2], [3, 4], [4, 6], [5, 7], [6, 9], [7, 11]] },
     mixolydian: { name: 'Mixolydian', steps: [[1, 0], [2, 2], [3, 4], [4, 5], [5, 7], [6, 9], [7, 10]] },
+    lydianDominant: { name: 'Lydian dominant', steps: [[1, 0], [2, 2], [3, 4], [4, 6], [5, 7], [6, 9], [7, 10]] },
+    aeolian: { name: 'Aeolian (natural minor)', steps: [[1, 0], [2, 2], [3, 3], [4, 5], [5, 7], [6, 8], [7, 10]] },
     melodicMinor: { name: 'Melodic minor', steps: [[1, 0], [2, 2], [3, 3], [4, 5], [5, 7], [6, 9], [7, 11]] },
     locrian: { name: 'Locrian', steps: [[1, 0], [2, 1], [3, 3], [4, 5], [5, 6], [6, 8], [7, 10]] },
     phrygianDominant: { name: 'Phrygian dominant', steps: [[1, 0], [2, 1], [3, 4], [4, 5], [5, 7], [6, 8], [7, 10]] },
@@ -146,7 +149,8 @@
     return pretty(rootName) + pretty(QUALITIES[quality].symbol);
   }
 
-  function buildChord(rootName, quality) {
+  // scaleId overrides the quality's default scale (e.g. Lydian for a IV chord).
+  function buildChord(rootName, quality, scaleId = QUALITIES[quality].scale) {
     const q = QUALITIES[quality];
     const tones = spellSteps(rootName, q.tones).map((t, i) => ({ ...t, guide: i === 1 || i === 3 }));
     return {
@@ -154,15 +158,17 @@
       quality,
       symbol: chordSymbol(rootName, quality),
       tones,
-      scaleId: q.scale,
-      scaleName: SCALES[q.scale].name,
-      scale: spellScale(rootName, q.scale),
+      scaleId,
+      scaleName: SCALES[scaleId].name,
+      scale: spellScale(rootName, scaleId),
     };
   }
 
   // ---------- progressions ----------
   // Chords are relative to the key: [letter steps, semitones] above the key root.
-  const P = (l, s, q, beats = 4) => ({ l, s, q, beats });
+  // `sc` overrides the chord's default scale where the key calls for a different
+  // one, e.g. a IV maj7 takes Lydian and a vi m7 Aeolian, so they stay in the key.
+  const P = (l, s, q, beats = 4, sc = null) => ({ l, s, q, beats, sc });
 
   const PROGRESSIONS = {
     'ii-V-I': { name: 'Major ii–V–I', defaultKey: 'Bb', pent: 'majorPentatonic',
@@ -173,12 +179,12 @@
       chords: [P(0, 0, '7'), P(3, 5, '7'), P(0, 0, '7', 8), P(3, 5, '7', 8), P(0, 0, '7', 8),
         P(4, 7, '7'), P(3, 5, '7'), P(0, 0, '7'), P(4, 7, '7')] },
     'minor-blues': { name: 'Minor blues', defaultKey: 'C', pent: 'minorPentatonic',
-      chords: [P(0, 0, 'm7', 16), P(3, 5, 'm7', 8), P(0, 0, 'm7', 8), P(5, 8, '7'), P(4, 7, '7b9'),
+      chords: [P(0, 0, 'm7', 16), P(3, 5, 'm7', 8), P(0, 0, 'm7', 8), P(5, 8, '7', 4, 'lydianDominant'), P(4, 7, '7b9'),
         P(0, 0, 'm7', 8)] },
     turnaround: { name: 'I–vi–ii–V turnaround', defaultKey: 'F', pent: 'majorPentatonic',
-      chords: [P(0, 0, 'maj7'), P(5, 9, 'm7'), P(1, 2, 'm7'), P(4, 7, '7')] },
+      chords: [P(0, 0, 'maj7'), P(5, 9, 'm7', 4, 'aeolian'), P(1, 2, 'm7'), P(4, 7, '7')] },
     'autumn-cycle': { name: 'Autumn-style cycle (major + minor ii–V)', defaultKey: 'Bb', pent: 'majorPentatonic',
-      chords: [P(1, 2, 'm7'), P(4, 7, '7'), P(0, 0, 'maj7'), P(3, 5, 'maj7'), P(6, 11, 'm7b5'),
+      chords: [P(1, 2, 'm7'), P(4, 7, '7'), P(0, 0, 'maj7'), P(3, 5, 'maj7', 4, 'lydian'), P(6, 11, 'm7b5'),
         P(2, 4, '7b9'), P(5, 9, 'm6', 8)] },
     'dorian-vamp': { name: 'Dorian vamp (one chord)', defaultKey: 'D', pent: 'minorPentatonic',
       chords: [P(0, 0, 'm7', 32)] },
@@ -194,7 +200,7 @@
     let start = 0;
     const chords = prog.chords.map((c) => {
       const root = simplifyRoot(transposeNote(concertKey, c.l, c.s));
-      const chord = { root, quality: c.q, beats: c.beats, startBeat: start };
+      const chord = { root, quality: c.q, scale: c.sc || QUALITIES[c.q].scale, beats: c.beats, startBeat: start };
       start += c.beats;
       return chord;
     });
@@ -233,7 +239,7 @@
       tones: q.tones.map(([, s]) => mod(rootPc + s, 12)),
       guides: [q.tones[1][1], q.tones[3][1]].map((s) => mod(rootPc + s, 12)),
       third: mod(rootPc + q.tones[1][1], 12),
-      scale: SCALES[q.scale].steps.map(([, s]) => mod(rootPc + s, 12)),
+      scale: SCALES[chord.scale || q.scale].steps.map(([, s]) => mod(rootPc + s, 12)),
     };
   }
 
