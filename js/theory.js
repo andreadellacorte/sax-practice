@@ -243,6 +243,61 @@
     };
   }
 
+  // ---------- explaining scales ----------
+  // How each scale relates to the major scale, for "New scale" cards. `parent`
+  // moves from the scale's root to the scale it is a mode of: A Dorian is G major
+  // starting on A, so Dorian's parent is [-1 letter, -2 semitones] away.
+  const SCALE_INTROS = {
+    dorian: { rule: 'The major scale with the 3rd and 7th lowered.',
+      sound: 'Minor, but warm: the natural 6th keeps it bright. Fits minor 7 chords, like the ii chord.',
+      parent: { l: -1, s: -2, kind: 'major' } },
+    mixolydian: { rule: 'The major scale with the 7th lowered.',
+      sound: 'Relaxed and bluesy. Fits dominant 7 chords, like the V chord.',
+      parent: { l: -4, s: -7, kind: 'major' } },
+    lydian: { rule: 'The major scale with the 4th raised.',
+      sound: 'Bright and floating. Fits a maj7 chord that isn\'t "home", like the IV chord.',
+      parent: { l: -3, s: -5, kind: 'major' } },
+    aeolian: { rule: 'The major scale with the 3rd, 6th and 7th lowered: the natural minor scale.',
+      sound: 'Plain, sad minor. Fits the vi chord of a major key.',
+      parent: { l: -5, s: -9, kind: 'major' } },
+    locrian: { rule: 'The major scale with the 2nd, 3rd, 5th, 6th and 7th lowered.',
+      sound: 'Dark and unstable. Fits half-diminished (m7♭5) chords, which always want to move on.',
+      parent: { l: -6, s: -11, kind: 'major' } },
+    melodicMinor: { rule: 'The major scale with only the 3rd lowered.',
+      sound: 'Minor with a hopeful top. Fits a minor chord that is "home" (m6).' },
+    phrygianDominant: { rule: 'The major scale with the 2nd, 6th and 7th lowered.',
+      sound: 'Spanish-sounding and tense. Fits V7♭9 in minor keys, and wants to resolve.',
+      parent: { l: 3, s: 5, kind: 'harmonic minor' } },
+    lydianDominant: { rule: 'The major scale with the 4th raised and the 7th lowered.',
+      sound: 'A dominant 7 sound with a shimmer. Fits the ♭VI7 chord of a minor blues.',
+      parent: { l: 4, s: 7, kind: 'melodic minor' } },
+    majorPentatonic: { rule: 'The major scale without the 4th and 7th: five notes.',
+      sound: 'Open and sweet. None of its notes clash with the chords of the key.' },
+    minorPentatonic: { rule: 'Five notes: 1 ♭3 4 5 ♭7. Leave out the 2nd and 6th, lower the 3rd and 7th.',
+      sound: 'Strong and riff-friendly. Almost nothing clashes over a blues.' },
+    blues: { rule: 'The minor pentatonic plus the ♭5, the "blue note": 1 ♭3 4 ♭5 5 ♭7.',
+      sound: 'The sound of the blues: one scale over all 12 bars. Use the ♭5 as a passing note.' },
+  };
+
+  // The scale a mode comes from, e.g. { root: 'G', kind: 'major' } for A Dorian.
+  function parentScale(rootName, scaleId) {
+    const p = SCALE_INTROS[scaleId] && SCALE_INTROS[scaleId].parent;
+    if (!p) return null;
+    return { root: simplifyRoot(transposeNote(rootName, p.l, p.s)), kind: p.kind };
+  }
+
+  // Scales a player meets in a progression with a given focus, in order of
+  // appearance: [{ scaleId, root }] with concert roots. Blues/pentatonic focus
+  // uses one scale on the key; otherwise each chord's own scale.
+  function scalesUsed(progressionId, key, focus) {
+    const tl = buildTimeline(progressionId, key);
+    const keyScale = { blues: 'blues', pentatonic: tl.pent }[focus];
+    if (keyScale) return [{ scaleId: keyScale, root: key }];
+    const out = [];
+    for (const c of tl.chords) if (!out.some((x) => x.scaleId === c.scale)) out.push({ scaleId: c.scale, root: c.root });
+    return out;
+  }
+
   // ---------- band note choice (pure; rng injectable for tests) ----------
 
   const BASS_LO = 28; // E1
@@ -350,7 +405,7 @@
     LETTERS, LETTER_PC, PREFERRED, KEYS, INSTRUMENTS, SCALES, QUALITIES, PROGRESSIONS,
     mod, parseNote, formatNote, pcOf, transposeNote, simplifyNote, simplifyRoot, pretty, spellPc,
     midiToFreq, freqToMidi, degreeLabel, toWritten, spellScale, buildChord, chordSymbol,
-    buildTimeline, chordPcs, walkBass, voiceChord, generateLick, nearestInRange, mulberry32,
+    buildTimeline, chordPcs, SCALE_INTROS, parentScale, scalesUsed, walkBass, voiceChord, generateLick, nearestInRange, mulberry32,
     BASS_LO, BASS_HI,
   };
 });

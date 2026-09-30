@@ -456,9 +456,9 @@
     }
 
     // Play reference notes (concert MIDI) on the lead voice, e.g. a clicked scale note.
-    playNotes(midis, spacing = 0.32) {
+    playNotes(midis, spacing = 0.32, delay = 0) {
       this.ensureContext();
-      const t0 = this.ctx.currentTime + 0.05;
+      const t0 = this.ctx.currentTime + 0.05 + delay;
       midis.forEach((m, i) => this.leadNote(m, t0 + i * spacing, spacing * (i === midis.length - 1 ? 2 : 0.9), 'ref'));
     }
   }

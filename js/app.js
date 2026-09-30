@@ -142,6 +142,7 @@
       <h2></h2>
       <p class="goal"></p>
       <ol>${lesson.steps.map(() => '<li></li>').join('')}</ol>
+      <div class="new-scales" id="new-scales" hidden></div>
       <div class="tip">💡 <span></span></div>
       <div class="lesson-actions">
         <button class="demo-btn" id="lesson-demo">${state.demo ? '■ Stop demo' : '🎷 Hear a demo'}</button>
@@ -152,6 +153,7 @@
     card.querySelector('.goal').textContent = lesson.goal;
     card.querySelectorAll('ol li').forEach((li, i) => { li.textContent = lesson.steps[i]; });
     card.querySelector('.tip span').textContent = lesson.tip;
+    renderNewScales(lesson, idx);
     $('lesson-done').addEventListener('click', () => {
       if (done) log.done = log.done.filter((id) => id !== lesson.id);
       else log.done.push(lesson.id);
@@ -163,6 +165,48 @@
     const next = $('lesson-next');
     if (next) next.addEventListener('click', () => selectLesson(LESSONS[idx + 1].id));
     $('lesson-demo').addEventListener('click', () => (state.demo ? stopDemo() : startDemo(lesson)));
+  }
+
+  // "New in this lesson": scales not met in any earlier lesson, explained against
+  // the major scale on the same root (the major scale itself is assumed known).
+  function renderNewScales(lesson, idx) {
+    const seen = new Set(['ionian']);
+    for (const l of LESSONS.slice(0, idx)) T.scalesUsed(l.progression, l.key, l.focus).forEach((x) => seen.add(x.scaleId));
+    const key = state.progression === lesson.progression ? state.key : lesson.key;
+    const fresh = T.scalesUsed(lesson.progression, key, lesson.focus).filter((x) => !seen.has(x.scaleId));
+    const box = $('new-scales');
+    box.hidden = !fresh.length;
+    if (!fresh.length) return;
+    box.innerHTML = `<span class="label">New in this lesson</span><div class="ns-grid"></div>`;
+    for (const { scaleId, root: concertRoot } of fresh) {
+      const root = dispRoot(concertRoot);
+      const intro = T.SCALE_INTROS[scaleId];
+      const major = T.spellScale(root, 'ionian');
+      const scale = T.spellScale(root, scaleId);
+      const majorPcs = new Set(major.map((n) => n.pc));
+      const scalePcs = new Set(scale.map((n) => n.pc));
+      const parent = T.parentScale(root, scaleId);
+      const title = `${T.pretty(root)} ${T.SCALES[scaleId].name.replace(/ \(.*\)/, '')}`;
+      const chips = (notes, cls) => notes.map((n) => `<span class="ns-chip ${cls(n)}"><b>${T.pretty(n.name)}</b><small>${n.label.replace(/b/g, '♭').replace(/#/g, '♯')}</small></span>`).join('');
+      const el = document.createElement('div');
+      el.className = 'ns-card';
+      el.innerHTML = `
+        <div class="ns-title">${title}</div>
+        <p class="ns-rule">${intro.rule}</p>
+        <div class="ns-row"><span class="ns-lab">${T.pretty(root)} major</span>${chips(major, (n) => (scalePcs.has(n.pc) ? '' : 'dropped'))}</div>
+        <div class="ns-row"><span class="ns-lab">${title}</span>${chips(scale, (n) => (majorPcs.has(n.pc) ? '' : 'changed'))}</div>
+        ${parent ? `<p class="ns-rel">Same notes as <b>${T.pretty(parent.root)} ${parent.kind}</b>, starting on ${T.pretty(root)}.</p>` : ''}
+        <p class="ns-sound">${intro.sound}</p>
+        <button class="ghost ns-play">▶ Hear the difference</button>`;
+      const base = 60 + T.pcOf(root) - dispMidiOffset();
+      const up = (notes) => [...notes.map((n) => base + n.semi), base + 12];
+      el.querySelector('.ns-play').addEventListener('click', () => {
+        const gap = 0.26;
+        band.playNotes(up(major), gap);
+        band.playNotes(up(scale), gap, (major.length + 1) * gap + 0.7);
+      });
+      box.querySelector('.ns-grid').appendChild(el);
+    }
   }
 
   function selectLesson(id, fromUser = true) {
@@ -210,6 +254,7 @@
     if (state.chordIdx >= state.timeline.chords.length) state.chordIdx = 0;
     if (!band.playing) state.chordIdx = 0;
     buildSpellMap();
+    if (settings.lessonId) renderLessonCard();
     renderChart();
     renderNow();
     renderScale();

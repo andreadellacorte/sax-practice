@@ -32,6 +32,7 @@ The app is static files with no backend. To put it on GitHub Pages, push the rep
   - *Ear training:* call and response over a blues and over a ii–V–I.
   - *Modal:* Dorian motifs, a Mixolydian funk vamp, rhythmic displacement.
   - *Changes:* target notes, enclosures, turnarounds, major pentatonic, minor ii–V–i, putting it together.
+- **New scale cards.** The first lesson that uses a scale explains it against the major scale: the one-line rule, the two scales side by side with the changed notes marked, which major scale a mode's notes come from, and a **Hear the difference** button.
 - **Lesson demos.** Every lesson has a **Hear a demo** button: a sax plays the exercise over the band. While it plays, the app shows each note, its fingering, and where it sits in the scale. Demos with several steps cycle through them, one per loop.
 - **Call & response.** The band plays a 2-bar phrase over the changes, and you answer it.
 - **Live pitch feedback.** The mic detects the note you're playing and shows it in written pitch with a tuning meter. It tells you whether the note is a target, a chord tone, a scale note or outside, and keeps running percentages.

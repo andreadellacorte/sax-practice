@@ -238,3 +238,37 @@ test('chord scales respect the key where the key is clear', () => {
   assert.deepEqual(names(T.buildChord('C', 'maj7', 'lydian').scale), ['C', 'D', 'E', 'F#', 'G', 'A', 'B']);
   assert.equal(T.buildChord('C', 'maj7', 'lydian').scale.find((n) => n.pc === 6).label, '#4');
 });
+
+test('new-scale intros: every scale met in a lesson (except major) is explained', () => {
+  global.window = global.window || {};
+  require('../js/lessons.js');
+  const seen = new Set(['ionian']);
+  for (const l of window.LESSONS) {
+    for (const { scaleId } of T.scalesUsed(l.progression, l.key, l.focus)) {
+      if (!seen.has(scaleId)) assert.ok(T.SCALE_INTROS[scaleId], `${l.id}: no intro for ${scaleId}`);
+      seen.add(scaleId);
+    }
+  }
+  assert.deepEqual(T.scalesUsed('ii-V-I', 'C', 'chord').map((x) => x.scaleId), ['dorian', 'mixolydian', 'ionian']);
+  assert.deepEqual(T.scalesUsed('blues', 'Bb', 'blues'), [{ scaleId: 'blues', root: 'Bb' }]);
+  assert.deepEqual(T.scalesUsed('blues', 'Bb', 'pentatonic'), [{ scaleId: 'minorPentatonic', root: 'Bb' }]);
+});
+
+test('modes name the scale they come from', () => {
+  const p = (root, id) => { const x = T.parentScale(root, id); return x && `${x.root} ${x.kind}`; };
+  assert.equal(p('A', 'dorian'), 'G major');
+  assert.equal(p('D', 'mixolydian'), 'G major');
+  assert.equal(p('C', 'lydian'), 'G major');
+  assert.equal(p('E', 'aeolian'), 'G major');
+  assert.equal(p('F#', 'locrian'), 'G major');
+  assert.equal(p('B', 'phrygianDominant'), 'E harmonic minor');
+  assert.equal(p('F', 'lydianDominant'), 'C melodic minor');
+  assert.equal(p('C', 'blues'), null);
+  // the parent really contains the same notes
+  for (const [root, id] of [['A', 'dorian'], ['Bb', 'mixolydian'], ['Eb', 'lydian'], ['C#', 'aeolian'], ['B', 'locrian']]) {
+    const par = T.parentScale(root, id);
+    const a = new Set(T.spellScale(root, id).map((n) => n.pc));
+    const b = new Set(T.spellScale(par.root, 'ionian').map((n) => n.pc));
+    assert.deepEqual([...a].sort(), [...b].sort(), `${root} ${id}`);
+  }
+});
