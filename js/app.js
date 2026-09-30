@@ -325,24 +325,33 @@
   }
 
   // Press and hold a note to hear it for as long as you like (concert MIDI).
+  // Releases are tracked per pointer at window level: the button can be rebuilt
+  // mid-hold (the scale re-renders on every chord change), so its own pointerup
+  // may never arrive.
+  const holds = new Map(); // pointerId -> { release, el, timer }
+  function releaseHold(id) {
+    const h = holds.get(id);
+    if (!h) return;
+    holds.delete(id);
+    clearTimeout(h.timer);
+    h.release();
+    h.el.classList.remove('pressed');
+  }
+  const releaseAllHolds = () => [...holds.keys()].forEach(releaseHold);
+  window.addEventListener('pointerup', (e) => releaseHold(e.pointerId));
+  window.addEventListener('pointercancel', (e) => releaseHold(e.pointerId));
+  window.addEventListener('blur', releaseAllHolds);
+  document.addEventListener('visibilitychange', releaseAllHolds);
+
   function attachHold(el, midi) {
-    let release = null;
-    const up = () => {
-      if (release) release();
-      release = null;
-      el.classList.remove('pressed');
-    };
     el.addEventListener('pointerdown', (e) => {
       if (e.button !== 0) return;
       e.preventDefault();
-      up();
-      release = band.holdNote(midi);
+      releaseHold(e.pointerId);
+      const release = band.holdNote(midi);
       el.classList.add('pressed');
-      el.setPointerCapture(e.pointerId); // keeps sounding if the pointer slides off
+      holds.set(e.pointerId, { release, el, timer: setTimeout(() => releaseHold(e.pointerId), 30000) });
     });
-    el.addEventListener('pointerup', up);
-    el.addEventListener('pointercancel', up);
-    el.addEventListener('lostpointercapture', up);
     el.addEventListener('contextmenu', (e) => e.preventDefault()); // long-press on touch screens
     el.addEventListener('click', (e) => { if (e.detail === 0) band.playNotes([midi]); }); // keyboard
   }
@@ -648,6 +657,7 @@
 
   function togglePlay() {
     if (band.playing) {
+      releaseAllHolds();
       band.stop();
       $('play').classList.remove('on');
       $('play').querySelector('.play-icon').textContent = '▶';
