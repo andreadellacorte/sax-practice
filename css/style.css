@@ -388,3 +388,33 @@ h1 { margin: 0; font-size: 18px; }
 .detected-fing { flex: none; }
 .detected-fing:empty { display: none; }
 .detected-fing .fing-svg { width: 56px; }
+
+/* ---------- lesson demo ---------- */
+
+.demo-btn {
+  background: var(--tone);
+  color: #06201b;
+  border: 0;
+  border-radius: 999px;
+  padding: 6px 16px;
+  font-weight: 600;
+}
+.demo-btn:hover { filter: brightness(1.1); }
+.demo-now {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--tone);
+  background: color-mix(in srgb, var(--tone) 10%, var(--panel));
+}
+.demo-body { display: flex; align-items: center; gap: 14px; margin-top: 6px; }
+.demo-fing .fing-svg { width: 60px; }
+.demo-fing:empty { display: none; }
+.demo-note { font-size: 40px; font-weight: 700; line-height: 1; color: var(--tone); transition: opacity 0.1s; }
+.demo-note sup { font-size: 0.4em; }
+.demo-note.rest { opacity: 0.35; }
+.demo-kind { font-size: 13px; margin-top: 4px; }
+.demo-now .hint { margin: 8px 0 0; font-size: 12px; }
+.chip.demo { background: color-mix(in srgb, var(--tone) 40%, var(--panel-2)); transform: scale(1.1); }
+.fing.demo { outline: 3px solid var(--tone); }
+.staff .head.demo { stroke: var(--tone); stroke-width: 4; }

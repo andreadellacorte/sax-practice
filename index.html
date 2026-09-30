@@ -104,6 +104,17 @@
           <div class="chord-concert" id="chord-concert"></div>
           <div class="beats" id="beats"><i></i><i></i><i></i><i></i></div>
           <div class="next">Next: <strong id="chord-next">—</strong></div>
+          <div class="demo-now" id="demo-now" hidden>
+            <div class="demo-head"><span class="label">🎷 Demo — the sax plays</span></div>
+            <div class="demo-body">
+              <div class="demo-fing" id="demo-fing"></div>
+              <div>
+                <div class="demo-note rest" id="demo-note">–</div>
+                <div class="demo-kind" id="demo-kind"></div>
+              </div>
+            </div>
+            <p class="hint">Watch the note, its fingering, and where it lights up in the scale. Then stop the demo and press Play to try it yourself.</p>
+          </div>
           <div class="lick" id="lick" hidden>
             <button id="show-lick" class="link">Show notes</button>
             <span id="lick-notes" hidden></span>
@@ -179,6 +190,7 @@
   <script src="js/theory.js"></script>
   <script src="js/pitch.js"></script>
   <script src="js/fingering.js"></script>
+  <script src="js/demo.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/lessons.js"></script>
   <script src="js/app.js"></script>

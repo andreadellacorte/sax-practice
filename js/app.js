@@ -144,6 +144,7 @@
       <ol>${lesson.steps.map(() => '<li></li>').join('')}</ol>
       <div class="tip">💡 <span></span></div>
       <div class="lesson-actions">
+        <button class="demo-btn" id="lesson-demo">${state.demo ? '■ Stop demo' : '🎷 Hear a demo'}</button>
         <button class="ghost" id="lesson-done">${done ? '✓ Completed' : 'Mark complete'}</button>
         ${idx < LESSONS.length - 1 ? '<button class="ghost" id="lesson-next">Next lesson →</button>' : ''}
       </div>`;
@@ -161,9 +162,11 @@
     });
     const next = $('lesson-next');
     if (next) next.addEventListener('click', () => selectLesson(LESSONS[idx + 1].id));
+    $('lesson-demo').addEventListener('click', () => (state.demo ? stopDemo() : startDemo(lesson)));
   }
 
   function selectLesson(id, fromUser = true) {
+    if (state.demo) stopDemo();
     settings.lessonId = id;
     const lesson = LESSONS.find((l) => l.id === id);
     if (lesson && fromUser) {
@@ -317,6 +320,7 @@
     drawStaff(v);
     renderFingerings(v, concertOf);
     markHeard();
+    if (state.demoNote) markDemo(mod(state.demoNote.midi + dispMidiOffset(), 12), state.demoNote.midi + inst().octaveSemis);
   }
 
   function drawStaff(v) {
@@ -364,6 +368,7 @@
       const b = document.createElement('button');
       b.className = `fing ${n.kind}`;
       b.dataset.pc = n.pc;
+      b.dataset.wmidi = wMidi;
       b.title = 'Click to hear it';
       b.innerHTML = window.Fingering.svg(wMidi) + '<b></b><small></small>';
       b.querySelector('b').textContent = T.pretty(toWrittenName(n)) + (Math.floor(wMidi / 12) - 1);
@@ -432,6 +437,14 @@
       setBeatDots(ev.beatInBar, false);
       return;
     }
+    if (ev.type === 'demo' && state.demo) {
+      showDemoNote(ev);
+      return;
+    }
+    if (ev.type === 'demoKind' && state.demo) {
+      $('demo-kind').textContent = window.Demo.LABELS[ev.kind];
+      return;
+    }
     if (ev.type === 'phrase' && state.callResponse) {
       const p = $('phrase');
       p.hidden = false;
@@ -447,6 +460,57 @@
     }
   }
 
+  // ---------- lesson demo ----------
+  function startDemo(lesson) {
+    state.demo = true;
+    band.setDemo({ kinds: lesson.demo, keyScale: keyScaleId() || 'blues' });
+    band.callResponse = state.callResponse;
+    $('demo-now').hidden = false;
+    $('demo-note').textContent = '–';
+    $('demo-note').className = 'demo-note rest';
+    $('demo-fing').innerHTML = '';
+    $('demo-kind').textContent = '';
+    renderLessonCard();
+    if (!band.playing) togglePlay();
+  }
+
+  function stopDemo() {
+    if (band.playing) togglePlay(); // stopping playback also ends the demo
+    else resetDemo();
+  }
+
+  function resetDemo() {
+    if (!state.demo) return;
+    state.demo = false;
+    band.setDemo(null);
+    state.demoNote = null;
+    $('demo-now').hidden = true;
+    markDemo(null);
+    renderLessonCard();
+  }
+
+  // Light up the demo note. Fingering boxes match the exact written octave when shown.
+  function markDemo(pc, wMidi = null) {
+    const exact = wMidi !== null && document.querySelector(`.fing[data-wmidi="${wMidi}"]`);
+    document.querySelectorAll('.chip, .staff .head, .fing').forEach((el) => {
+      const on = el.classList.contains('fing') && exact
+        ? Number(el.dataset.wmidi) === wMidi
+        : pc !== null && Number(el.dataset.pc) === pc;
+      el.classList.toggle('demo', on);
+    });
+  }
+
+  function showDemoNote(ev) {
+    state.demoNote = ev;
+    const dispMidi = ev.midi + dispMidiOffset();
+    const dispPc = mod(dispMidi, 12);
+    const el = $('demo-note');
+    el.innerHTML = `${T.pretty(spell(dispPc))}<sup>${Math.floor(dispMidi / 12) - 1}</sup>`;
+    el.className = 'demo-note';
+    $('demo-fing').innerHTML = settings.instrument === 'concert' ? '' : window.Fingering.svg(ev.midi + inst().octaveSemis);
+    markDemo(dispPc, ev.midi + inst().octaveSemis);
+  }
+
   function togglePlay() {
     if (band.playing) {
       band.stop();
@@ -458,6 +522,7 @@
       highlightBar(-1);
       $('bar-count').textContent = '';
       hidePhrase();
+      resetDemo();
     } else {
       band.countIn = settings.countIn;
       band.swing = Number(settings.swing);
@@ -479,6 +544,7 @@
     const i = inst();
     // Call-and-response phrases sound in a comfortable written range: D4..A5.
     band.leadRange = [62 - i.octaveSemis, 81 - i.octaveSemis];
+    band.demoRange = [62 - i.octaveSemis, 84 - i.octaveSemis]; // demos: written D4..C6
     mic.minFreq = T.midiToFreq(i.lowestConcert) * 0.85;
   }
 
@@ -557,7 +623,7 @@
 
     if (state.heardPc !== dispPc) { state.heardPc = dispPc; markHeard(); }
 
-    if (band.playing && !state.counting && state.bar >= 0) {
+    if (band.playing && !state.demo && !state.counting && state.bar >= 0) {
       stats.total++;
       if (sets.target.has(concertPc)) stats.target++;
       if (sets.tone.has(concertPc)) stats.tone++;
@@ -589,6 +655,11 @@
     lastFrame = now;
     if (band.playing) {
       for (const ev of band.popEvents(band.ctx.currentTime)) handleEvent(ev);
+      if (state.demoNote && band.ctx.currentTime > state.demoNote.end) {
+        state.demoNote = null;
+        $('demo-note').classList.add('rest');
+        markDemo(null);
+      }
       if (dt < 1) {
         const k = todayKey();
         log.days[k] = (log.days[k] || 0) + dt;
@@ -646,7 +717,12 @@
       band.swing = Number(settings.swing);
       saveSettings();
     });
-    $('focus').addEventListener('change', (e) => { state.focus = e.target.value; renderScale(); resetStats(); });
+    $('focus').addEventListener('change', (e) => {
+      state.focus = e.target.value;
+      if (band.demo) band.setDemo({ ...band.demo, keyScale: keyScaleId() || 'blues' });
+      renderScale();
+      resetStats();
+    });
     $('count-in').addEventListener('change', (e) => { settings.countIn = e.target.checked; saveSettings(); });
     $('call-response').addEventListener('change', (e) => {
       state.callResponse = e.target.checked;

@@ -4,7 +4,7 @@
   'use strict';
   const T = window.Theory;
 
-  const LEVELS = { drums: 0.8, bass: 1.0, piano: 0.85, lead: 0.9, ref: 0.9 };
+  const LEVELS = { drums: 0.8, bass: 1.0, piano: 0.85, lead: 0.9, ref: 0.9, demo: 1.0 };
   // Comping rhythms: eighth-note positions within a bar (0 = beat 1, 3 = "2 and", 7 = "4 and").
   const COMP_PATTERNS = [[0, 3], [1, 4], [3, 6], [0, 5], [2, 7], [1, 6], [3], [0, 4, 7], [3, 7], [2, 5]];
 
@@ -18,6 +18,9 @@
       this.countIn = true;
       this.callResponse = false;
       this.leadRange = [53, 72];
+      this.demoRange = [53, 75];
+      this.demo = null; // { kinds: [...], keyScale } while a lesson demo is playing
+      this.demoCache = null;
       this.mutes = { drums: false, bass: false, piano: false };
       this.volume = 0.8;
       this.events = [];
@@ -67,6 +70,12 @@
 
     setTimeline(tl) {
       this.timeline = tl;
+      this.demoCache = null;
+    }
+
+    setDemo(demo) {
+      this.demo = demo;
+      this.demoCache = null;
     }
 
     start() {
@@ -79,6 +88,7 @@
       this.prevVoicing = null;
       this.anticipated = false;
       this.events = [];
+      this.demoCache = null;
       this.timer = setInterval(() => this.tick(), 25);
       this.tick();
     }
@@ -111,10 +121,13 @@
       }
     }
 
+    // Events are not pushed in time order (demo notes and echoes are scheduled ahead).
     popEvents(now) {
       const due = [];
-      while (this.events.length && this.events[0].time <= now) due.push(this.events.shift());
-      return due;
+      const rest = [];
+      for (const e of this.events) (e.time <= now ? due : rest).push(e);
+      this.events = rest;
+      return due.sort((a, b) => a.time - b.time);
     }
 
     beatAt(pos) {
@@ -157,21 +170,60 @@
       this.bassNote(m, t, bd * 0.92);
 
       if (b.beatInBar === 0) this.compBar(pos, t, bd);
+      if (this.demo) this.scheduleDemo(pos, i, t, bd);
 
       if (this.callResponse && b.beatInBar === 0) {
         const phase = globalBar % 4;
         if (phase === 0) {
           const lick = T.generateLick((e) => this.chordAt(pos + Math.floor(e / 2)), Math.random,
             this.leadRange[0], this.leadRange[1]);
+          const echo = this.demo && this.demo.kinds.includes('echo');
           for (const n of lick) {
             const nt = t + Math.floor(n.eighth / 2) * bd + (n.eighth % 2 ? bd * this.swing : 0);
-            this.leadNote(n.midi, nt, (n.len * bd) / 2 * 0.9, 'lead');
+            const dur = (n.len * bd) / 2 * 0.9;
+            this.leadNote(n.midi, nt, dur, 'lead');
+            // Demo: the "student" sax answers with the same phrase two bars later.
+            if (echo) this.demoNote(n.midi, nt + 8 * bd, dur);
           }
           this.events.push({ time: t, type: 'phrase', mode: 'listen', lick });
         } else if (phase === 2) {
           this.events.push({ time: t, type: 'phrase', mode: 'play' });
         }
       }
+    }
+
+    // Offset within a beat (0..1) -> seconds, applying swing to off-beats.
+    swingOffset(f, bd) {
+      const s = this.swing;
+      return (f <= 0.5 ? f * 2 * s : s + (f - 0.5) * 2 * (1 - s)) * bd;
+    }
+
+    scheduleDemo(pos, i, t, bd) {
+      const tl = this.timeline;
+      const loop = Math.floor(pos / tl.totalBeats);
+      if (!this.demoCache || this.demoCache.loop !== loop) {
+        const kind = this.demo.kinds[loop % this.demo.kinds.length];
+        const notes = window.Demo.build(kind, tl, {
+          lo: this.demoRange[0], hi: this.demoRange[1], keyScale: this.demo.keyScale, loop,
+        });
+        const byBeat = new Map();
+        for (const n of notes) {
+          const nb = T.mod(n.beat, tl.totalBeats);
+          const k = Math.floor(nb);
+          if (!byBeat.has(k)) byBeat.set(k, []);
+          byBeat.get(k).push({ ...n, frac: nb - k });
+        }
+        this.demoCache = { loop, byBeat };
+        this.events.push({ time: t, type: 'demoKind', kind });
+      }
+      for (const n of this.demoCache.byBeat.get(i) || []) {
+        this.demoNote(n.midi, t + this.swingOffset(n.frac, bd), n.dur * bd * 0.92);
+      }
+    }
+
+    demoNote(midi, t, dur) {
+      this.leadNote(midi, t, dur, 'demo');
+      this.events.push({ time: t, type: 'demo', midi, end: t + dur });
     }
 
     compBar(pos, t, bd) {

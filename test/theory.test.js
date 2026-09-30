@@ -180,3 +180,38 @@ test('every progression names a key pentatonic', () => {
   }
   assert.deepEqual(names(T.spellScale('F', 'majorPentatonic')), ['F', 'G', 'A', 'C', 'D']);
 });
+
+const Demo = require('../js/demo.js');
+
+test('demos: every kind, every progression — in range, well-formed', () => {
+  const lo = 53, hi = 75; // alto, written D4..C6
+  for (const pid of Object.keys(T.PROGRESSIONS)) {
+    const tl = T.buildTimeline(pid, 'Bb');
+    for (const kind of Demo.KINDS) {
+      for (const keyScale of ['blues', 'minorPentatonic', 'majorPentatonic']) {
+        const notes = Demo.build(kind, tl, { lo, hi, keyScale, loop: 2 });
+        if (kind === 'echo') { assert.equal(notes.length, 0); continue; }
+        assert.ok(notes.length > 0, `${pid} ${kind} is empty`);
+        for (const n of notes) {
+          assert.ok(Number.isInteger(n.midi) && n.midi >= lo && n.midi <= hi, `${pid} ${kind} midi ${n.midi}`);
+          assert.ok(n.dur > 0 && n.beat >= -1 && n.beat < tl.totalBeats, `${pid} ${kind} beat ${n.beat}`);
+        }
+      }
+    }
+  }
+});
+
+test('demos play what the lesson asks for', () => {
+  const tl = T.buildTimeline('ii-V-I', 'Bb');
+  const chordAt = (b) => tl.chords[tl.beats[T.mod(Math.floor(b), tl.totalBeats)].chordIdx];
+  const opts = { lo: 53, hi: 75 };
+  for (const n of Demo.build('root-whole', tl, opts)) assert.equal(T.mod(n.midi, 12), T.pcOf(chordAt(n.beat).root));
+  for (const n of Demo.build('target', tl, opts).filter((x) => Number.isInteger(x.beat))) {
+    assert.equal(T.mod(n.midi, 12), T.chordPcs(chordAt(n.beat)).third);
+  }
+  for (const n of Demo.build('arp-up', tl, opts)) assert.ok(T.chordPcs(chordAt(n.beat)).tones.includes(T.mod(n.midi, 12)));
+  for (const n of Demo.build('guide', tl, opts)) assert.ok(T.chordPcs(chordAt(n.beat)).guides.includes(T.mod(n.midi, 12)));
+  const blues = T.buildTimeline('blues', 'Bb');
+  const bluesPcs = T.spellScale('Bb', 'blues').map((x) => x.pc);
+  for (const n of Demo.build('riff', blues, { ...opts, keyScale: 'blues' })) assert.ok(bluesPcs.includes(T.mod(n.midi, 12)));
+});

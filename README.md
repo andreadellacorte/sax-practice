@@ -32,6 +32,7 @@ The app is static files with no backend. To put it on GitHub Pages, push the rep
   - *Ear training:* call and response over a blues and over a ii–V–I.
   - *Modal:* Dorian motifs, a Mixolydian funk vamp, rhythmic displacement.
   - *Changes:* target notes, enclosures, turnarounds, major pentatonic, minor ii–V–i, putting it together.
+- **Lesson demos.** Every lesson has a **Hear a demo** button: a sax plays the exercise over the band. While it plays, the app shows each note, its fingering, and where it sits in the scale. Demos with several steps cycle through them, one per loop.
 - **Call & response.** The band plays a 2-bar phrase over the changes, and you answer it.
 - **Live pitch feedback.** The mic detects the note you're playing and shows it in written pitch with a tuning meter. It tells you whether the note is a target, a chord tone, a scale note or outside, and keeps running percentages.
 - **Practice log.** Tracks minutes practised today, your day streak and completed lessons, saved in your browser's localStorage.
@@ -45,6 +46,7 @@ Keyboard: **Space** plays and stops.
 | `js/theory.js` | Note spelling, transposition, chords, scales, progressions, bass/voicing/lick logic (pure) |
 | `js/pitch.js` | YIN pitch detector and mic tracker |
 | `js/fingering.js` | Sax fingerings by written pitch, SVG key diagram |
+| `js/demo.js` | Demo phrases for each lesson exercise (pure) |
 | `js/audio.js` | Web Audio band with lookahead scheduler |
 | `js/lessons.js` | Lesson curriculum |
 | `js/app.js` | UI |

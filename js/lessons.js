@@ -1,6 +1,7 @@
 // Guided curriculum. Each lesson = a progression + a constraint (focus) + coaching.
 // focus: roots | chord | guide | thirds | blues | pentatonic | scale — decides which
 // notes are highlighted as targets and what the mic scores as a "hit".
+// demo: Demo kinds (js/demo.js) the sax plays on "Hear demo", one per loop, cycling.
 // Optional: callResponse (bool), swing ('0.5' straight … '0.68' hard swing).
 // Keep lessons of the same level together: the sidebar groups consecutive levels.
 window.LESSONS = [
@@ -10,6 +11,7 @@ window.LESSONS = [
     title: 'Long tones on chord tones',
     level: 'Foundations',
     progression: 'dorian-vamp', key: 'D', tempo: 70, focus: 'chord',
+    demo: ['long-tones'],
     goal: 'Warm up your sound and tuning while hearing how each chord tone sits against the band.',
     steps: [
       'Play the root as a whole note (4 beats) with a full, steady tone. Watch the tuning needle.',
@@ -24,6 +26,7 @@ window.LESSONS = [
     title: 'Hear the changes: roots only',
     level: 'Foundations',
     progression: 'ii-V-I', key: 'Bb', tempo: 80, focus: 'roots',
+    demo: ['root-whole', 'root-quarters', 'root-rhythm'],
     goal: 'Feel where each chord changes by playing only its root.',
     steps: [
       'Press Play and listen to one full loop without playing. Hum the bass on beat 1 of each bar.',
@@ -38,6 +41,7 @@ window.LESSONS = [
     title: 'Arpeggios: 1 – 3 – 5 – 7',
     level: 'Foundations',
     progression: 'ii-V-I', key: 'Bb', tempo: 80, focus: 'chord',
+    demo: ['arp-up', 'arp-down', 'arp-3'],
     goal: 'Know the four chord tones of each chord without thinking.',
     steps: [
       'Play each arpeggio up (R 3 5 7) in quarter notes, one chord per bar.',
@@ -52,6 +56,7 @@ window.LESSONS = [
     title: 'Digital patterns: 1-2-3-5',
     level: 'Foundations',
     progression: 'ii-V-I', key: 'Bb', tempo: 90, focus: 'chord',
+    demo: ['digital'],
     goal: 'Learn a classic four-note cell that outlines any chord and fits over fast changes.',
     steps: [
       'On each chord, play scale degrees 1-2-3-5 as quarter notes (e.g. over Cmaj7: C D E G).',
@@ -66,6 +71,7 @@ window.LESSONS = [
     title: 'Guide tones: 3rds and 7ths',
     level: 'Foundations',
     progression: 'ii-V-I', key: 'Bb', tempo: 90, focus: 'guide',
+    demo: ['guide'],
     goal: 'Outline the harmony with just two notes per chord and smooth voice leading.',
     steps: [
       'Play only the 3rd of each chord as a whole note.',
@@ -80,6 +86,7 @@ window.LESSONS = [
     title: 'Chromatic approach notes',
     level: 'Foundations',
     progression: 'ii-V-I', key: 'Bb', tempo: 90, focus: 'chord',
+    demo: ['approach'],
     goal: 'Use "wrong" notes on purpose: a half step below a chord tone, resolving up into it.',
     steps: [
       'Pick a chord tone. Play the note a half step below it on the "and" of a beat, then the chord tone on the next beat.',
@@ -96,6 +103,7 @@ window.LESSONS = [
     title: 'The blues scale',
     level: 'Blues',
     progression: 'blues', key: 'Bb', tempo: 100, focus: 'blues',
+    demo: ['riff'],
     goal: 'Get a whole 12-bar chorus of sound from one six-note scale.',
     steps: [
       'Play the blues scale up and down slowly over the form (click "Play scale" to hear it).',
@@ -110,6 +118,7 @@ window.LESSONS = [
     title: 'Minor pentatonic: five safe notes',
     level: 'Blues',
     progression: 'blues', key: 'Bb', tempo: 100, focus: 'pentatonic',
+    demo: ['riff'],
     goal: 'Use the five-note minor pentatonic — the blues scale without the ♭5 — for strong, simple riffs.',
     steps: [
       'Play the minor pentatonic up and down. It is the blues scale minus the ♭5.',
@@ -124,6 +133,7 @@ window.LESSONS = [
     title: 'Rhythm first: one-note solo',
     level: 'Blues',
     progression: 'dominant-vamp', key: 'Bb', tempo: 110, focus: 'roots',
+    demo: ['root-rhythm'],
     goal: 'Improvise with rhythm alone. The groove matters more than the notes.',
     steps: [
       'Play one note, the root, and make up rhythms: short/long, on the beat/off the beat.',
@@ -138,6 +148,7 @@ window.LESSONS = [
     title: 'Phrasing and space',
     level: 'Blues',
     progression: 'blues', key: 'Bb', tempo: 100, focus: 'blues',
+    demo: ['space'],
     goal: 'Control phrase length and leave room to breathe — the band fills the gaps.',
     steps: [
       'Play 1-bar phrases, each followed by 1 bar of rest.',
@@ -152,6 +163,7 @@ window.LESSONS = [
     title: 'Blues with chord tones',
     level: 'Blues',
     progression: 'blues', key: 'Bb', tempo: 110, focus: 'chord',
+    demo: ['arp-up', 'riff'],
     goal: 'Mix the blues scale with the real chord tones so you follow the changes.',
     steps: [
       'Play the arpeggio of each chord in the blues. Notice the 3rd changes between I7 and IV7.',
@@ -165,6 +177,7 @@ window.LESSONS = [
     title: 'Minor blues',
     level: 'Blues',
     progression: 'minor-blues', key: 'C', tempo: 110, focus: 'blues',
+    demo: ['riff', 'arp-up'],
     goal: 'Handle a darker blues: minor chords, and a ♭VI7–V7 turnaround at the end.',
     steps: [
       'Play the blues scale over the whole form. It fits even better than on a major blues.',
@@ -181,6 +194,7 @@ window.LESSONS = [
     title: 'Call & response: blues',
     level: 'Ear training',
     progression: 'blues', key: 'Bb', tempo: 90, focus: 'chord', callResponse: true,
+    demo: ['echo'],
     goal: 'Train your ear to hear and repeat phrases, the way players trade ideas.',
     steps: [
       'The band plays a short phrase for 2 bars (LISTEN). Then you have 2 bars (YOUR TURN).',
@@ -195,6 +209,7 @@ window.LESSONS = [
     title: 'Call & response: ii–V–I',
     level: 'Ear training',
     progression: 'ii-V-I', key: 'Bb', tempo: 90, focus: 'chord', callResponse: true,
+    demo: ['echo'],
     goal: 'Echo phrases that move through chord changes, so your ear learns how lines follow harmony.',
     steps: [
       'Echo each phrase exactly. The phrases are built from chord tones on strong beats.',
@@ -211,6 +226,7 @@ window.LESSONS = [
     title: 'Modal: Dorian motifs',
     level: 'Modal',
     progression: 'dorian-vamp', key: 'D', tempo: 130, focus: 'scale',
+    demo: ['motif'],
     goal: 'Build a solo from one small idea over a single chord.',
     steps: [
       'Play the Dorian scale up and down. The natural 6th is its characteristic note.',
@@ -225,6 +241,7 @@ window.LESSONS = [
     title: 'Mixolydian funk vamp',
     level: 'Modal',
     progression: 'dominant-vamp', key: 'Bb', tempo: 100, focus: 'scale', swing: '0.5',
+    demo: ['funk'],
     goal: 'Play straight-eighth, funky lines over a dominant chord using Mixolydian.',
     steps: [
       'Play Mixolydian up and down in straight eighths. It is a major scale with a ♭7.',
@@ -239,6 +256,7 @@ window.LESSONS = [
     title: 'Rhythmic displacement',
     level: 'Modal',
     progression: 'dorian-vamp', key: 'D', tempo: 110, focus: 'scale',
+    demo: ['displace'],
     goal: 'Take one phrase and move it around the bar. The same notes feel completely different.',
     steps: [
       'Make up a 4-note phrase in eighth notes that starts on beat 1. Play it every bar.',
@@ -255,6 +273,7 @@ window.LESSONS = [
     title: 'Target notes: land on the 3rd',
     level: 'Changes',
     progression: 'autumn-cycle', key: 'Bb', tempo: 100, focus: 'thirds',
+    demo: ['target'],
     goal: 'Aim each phrase so it lands on the 3rd of the new chord on beat 1.',
     steps: [
       'Play just the 3rd of every chord on beat 1. Watch the "next" chord to prepare.',
@@ -268,6 +287,7 @@ window.LESSONS = [
     title: 'Enclosures',
     level: 'Changes',
     progression: 'autumn-cycle', key: 'Bb', tempo: 90, focus: 'thirds',
+    demo: ['enclose'],
     goal: 'Surround a target note from above and below before landing on it — the bebop sound.',
     steps: [
       'Enclose the 3rd of each chord: scale note above, half step below, then the 3rd on the beat.',
@@ -282,6 +302,7 @@ window.LESSONS = [
     title: 'Turnarounds: I–vi–ii–V',
     level: 'Changes',
     progression: 'turnaround', key: 'F', tempo: 110, focus: 'guide',
+    demo: ['guide'],
     goal: 'Navigate a fast-moving, one-chord-per-bar progression with guide tones.',
     steps: [
       'Play a guide-tone line: 3rd or 7th of each chord, moving to the nearest one each bar.',
@@ -296,6 +317,7 @@ window.LESSONS = [
     title: 'Major pentatonic over changes',
     level: 'Changes',
     progression: 'ii-V-I', key: 'Bb', tempo: 110, focus: 'pentatonic',
+    demo: ['riff'],
     goal: 'One five-note shape fits the whole ii–V–I. It gives you an open, melodic sound.',
     steps: [
       'Play the major pentatonic of the key over the whole progression.',
@@ -310,6 +332,7 @@ window.LESSONS = [
     title: 'Minor ii–V–i',
     level: 'Changes',
     progression: 'minor-ii-V-i', key: 'C', tempo: 100, focus: 'chord',
+    demo: ['arp-up', 'guide'],
     goal: 'Handle the half-diminished and altered dominant chords of a minor key.',
     steps: [
       'Arpeggiate each chord. On the m7♭5 chord, the ♭5 is the note to hear.',
@@ -324,6 +347,7 @@ window.LESSONS = [
     title: 'Put it together',
     level: 'Changes',
     progression: 'autumn-cycle', key: 'Bb', tempo: 120, focus: 'chord',
+    demo: ['lick'],
     goal: 'Solo over the changes using everything so far.',
     steps: [
       'Take 2 choruses. Start sparse and low, and build intensity toward the end.',
