@@ -115,9 +115,17 @@
             </div>
             <p class="hint">Watch the note, its fingering, and where it lights up in the scale. Then stop the demo and press Play to try it yourself.</p>
           </div>
-          <div class="lick" id="lick" hidden>
-            <button id="show-lick" class="link">Show notes</button>
-            <span id="lick-notes" hidden></span>
+          <div class="cr" id="cr" hidden>
+            <div class="cr-head">
+              <span class="cr-who" id="cr-who"></span>
+              <label class="chk cr-hide" title="Hide the note names and fingerings while you listen"><input type="checkbox" id="cr-hide"> Ear only</label>
+            </div>
+            <div class="demo-body" id="cr-body">
+              <div class="demo-fing" id="cr-fing"></div>
+              <div class="demo-note rest" id="cr-note">–</div>
+            </div>
+            <div class="cr-phrase" id="cr-phrase"></div>
+            <div class="cr-status" id="cr-status"></div>
           </div>
         </section>
 
@@ -135,7 +143,7 @@
             <span><i class="sw target"></i>Target</span>
             <span><i class="sw tone"></i>Chord tone</span>
             <span><i class="sw scale"></i>Scale note</span>
-            <span class="hint">Click a note to hear it</span>
+            <span class="hint">Press and hold a note to hear it</span>
           </div>
         </section>
 

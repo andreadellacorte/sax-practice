@@ -418,3 +418,39 @@ h1 { margin: 0; font-size: 18px; }
 .chip.demo { background: color-mix(in srgb, var(--tone) 40%, var(--panel-2)); transform: scale(1.1); }
 .fing.demo { outline: 3px solid var(--tone); }
 .staff .head.demo { stroke: var(--tone); stroke-width: 4; }
+
+/* ---------- call & response ---------- */
+
+.phrase.listen, .phrase.play { white-space: nowrap; }
+.cr {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+}
+.cr-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.cr-who { font-weight: 600; font-size: 14px; }
+.cr-hide { font-size: 12px; color: var(--muted); }
+.cr .demo-body { min-height: 64px; }
+.cr .demo-note { color: var(--brass-2); }
+.cr-phrase { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+.cr-chip {
+  min-width: 30px;
+  padding: 3px 7px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  text-align: center;
+  font-weight: 600;
+  font-size: 14px;
+}
+.cr-chip.pending { color: var(--muted); border-style: dashed; }
+.cr-chip.cur { border-color: var(--brass-2); background: color-mix(in srgb, var(--brass) 30%, var(--panel)); }
+.cr-chip.hit { border-color: var(--good); background: color-mix(in srgb, var(--good) 30%, var(--panel)); }
+.cr-status { margin-top: 8px; font-size: 13px; color: var(--muted); }
+.cr-status.done { color: var(--good); font-weight: 600; }
+.chip.passing, .fing.passing { border-style: dashed; border-color: var(--tone); }
+.chip.passing small, .fing.passing small { color: var(--tone); }
+.chip, .fing { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.chip.pressed, .fing.pressed { border-color: var(--brass-2); background: color-mix(in srgb, var(--brass) 25%, var(--panel-2)); }

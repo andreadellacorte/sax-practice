@@ -307,10 +307,11 @@
       const b = document.createElement('button');
       b.className = `chip ${n.kind}`;
       b.dataset.pc = n.pc;
+      b.dataset.name = n.name;
       b.innerHTML = '<b></b><small></small>';
       b.firstChild.textContent = T.pretty(n.name);
       b.lastChild.textContent = n.label;
-      b.addEventListener('click', () => band.playNotes([concertOf(n)]));
+      attachHold(b, concertOf(n));
       chips.appendChild(b);
     }
     $('play-scale').onclick = () => {
@@ -321,6 +322,29 @@
     renderFingerings(v, concertOf);
     markHeard();
     if (state.demoNote) markDemo(mod(state.demoNote.midi + dispMidiOffset(), 12), state.demoNote.midi + inst().octaveSemis);
+  }
+
+  // Press and hold a note to hear it for as long as you like (concert MIDI).
+  function attachHold(el, midi) {
+    let release = null;
+    const up = () => {
+      if (release) release();
+      release = null;
+      el.classList.remove('pressed');
+    };
+    el.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      up();
+      release = band.holdNote(midi);
+      el.classList.add('pressed');
+      el.setPointerCapture(e.pointerId); // keeps sounding if the pointer slides off
+    });
+    el.addEventListener('pointerup', up);
+    el.addEventListener('pointercancel', up);
+    el.addEventListener('lostpointercapture', up);
+    el.addEventListener('contextmenu', (e) => e.preventDefault()); // long-press on touch screens
+    el.addEventListener('click', (e) => { if (e.detail === 0) band.playNotes([midi]); }); // keyboard
   }
 
   function drawStaff(v) {
@@ -369,11 +393,11 @@
       b.className = `fing ${n.kind}`;
       b.dataset.pc = n.pc;
       b.dataset.wmidi = wMidi;
-      b.title = 'Click to hear it';
+      b.title = 'Press and hold to hear it';
       b.innerHTML = window.Fingering.svg(wMidi) + '<b></b><small></small>';
       b.querySelector('b').textContent = T.pretty(toWrittenName(n)) + (Math.floor(wMidi / 12) - 1);
       b.querySelector('small').textContent = n.octave ? 'octave' : n.label;
-      b.addEventListener('click', () => band.playNotes([wMidi - i.octaveSemis]));
+      attachHold(b, wMidi - i.octaveSemis);
       box.appendChild(b);
     }
     $('fingerings-sub').textContent = written()
@@ -396,7 +420,63 @@
 
   function hidePhrase() {
     $('phrase').hidden = true;
-    $('lick').hidden = true;
+    $('cr').hidden = true;
+    state.cr = null;
+    state.crNote = null;
+  }
+
+  // ---------- call & response box ----------
+  // state.cr = { lick, mode: 'listen' | 'play', echo, shown, cur, hits }
+  function crNoteName(midi) {
+    const dispMidi = midi + dispMidiOffset();
+    return { name: T.pretty(spell(mod(dispMidi, 12))), oct: Math.floor(dispMidi / 12) - 1 };
+  }
+
+  function renderCr() {
+    const cr = state.cr;
+    if (!cr) return;
+    const hide = settings.crHide;
+    const n = cr.lick.length;
+    $('cr-who').textContent = cr.mode === 'listen' ? '🎺 Call — listen to the trumpet'
+      : cr.echo ? '🎷 Demo answers — this is how to echo it' : '🎷 Your turn — play it back';
+    const box = $('cr-phrase');
+    box.innerHTML = '';
+    cr.lick.forEach((note, i) => {
+      const reached = cr.mode === 'play' || i <= cr.shown;
+      const el = document.createElement('span');
+      el.className = 'cr-chip' + (i === cr.cur ? ' cur' : '') + (i < cr.hits ? ' hit' : '') + (reached ? '' : ' pending');
+      el.textContent = (reached && !hide) || i < cr.hits ? crNoteName(note.midi).name : reached ? '?' : '·';
+      box.appendChild(el);
+    });
+    let status = '';
+    if (cr.mode === 'listen') status = cr.shown >= 0 ? `Note ${cr.shown + 1} of ${n}` : 'Get ready…';
+    else if (cr.echo) status = 'Then stop the demo and try it yourself.';
+    else if (!mic.active) status = 'Turn on the mic to check your echo.';
+    else status = cr.hits === n ? `✓ Nailed it! ${n} of ${n} notes` : `${cr.hits} of ${n} notes echoed`;
+    $('cr-status').textContent = status;
+    $('cr-status').className = 'cr-status' + (cr.mode === 'play' && cr.hits === n && !cr.echo ? ' done' : '');
+  }
+
+  function showCrNote(ev) {
+    state.crNote = ev;
+    const cr = state.cr;
+    const hidden = settings.crHide && cr.mode === 'listen';
+    const { oct } = crNoteName(ev.midi);
+    const dispPc = mod(ev.midi + dispMidiOffset(), 12);
+    const wMidi = ev.midi + inst().octaveSemis;
+    const { name: spelled, inScale } = spellAgainstScale(dispPc);
+    const name = T.pretty(spelled);
+    const el = $('cr-note');
+    el.innerHTML = hidden ? '?' : `${name}<sup>${oct}</sup>`;
+    el.className = 'demo-note';
+    $('cr-fing').innerHTML = hidden || settings.instrument === 'concert' ? '' : window.Fingering.svg(ev.midi + inst().octaveSemis);
+    if (hidden) {
+      markDemo(null);
+    } else {
+      markDemo(dispPc, wMidi);
+      showNoteExtras(dispPc, spelled, wMidi, inScale);
+    }
+    renderCr();
   }
 
   function renderLog() {
@@ -437,6 +517,17 @@
       setBeatDots(ev.beatInBar, false);
       return;
     }
+    if (ev.type === 'call' && state.cr) {
+      state.cr.shown = ev.idx;
+      state.cr.cur = ev.idx;
+      showCrNote(ev);
+      return;
+    }
+    if (ev.type === 'demo' && ev.idx != null && state.cr) {
+      state.cr.cur = ev.idx; // the demo sax echoing the call
+      showCrNote(ev);
+      return;
+    }
     if (ev.type === 'demo' && state.demo) {
       showDemoNote(ev);
       return;
@@ -449,23 +540,30 @@
       const p = $('phrase');
       p.hidden = false;
       p.className = `phrase ${ev.mode}`;
-      p.textContent = ev.mode === 'listen' ? 'LISTEN' : 'YOUR TURN';
-      if (ev.mode === 'listen') {
-        const off = dispMidiOffset();
-        $('lick').hidden = false;
-        $('lick-notes').hidden = true;
-        $('show-lick').hidden = false;
-        $('lick-notes').textContent = ev.lick.map((n) => T.pretty(spell(n.midi + off))).join(' · ');
-      }
+      p.textContent = ev.mode === 'listen' ? 'LISTEN' : ev.echo ? 'DEMO ANSWERS' : 'YOUR TURN';
+      state.cr = { lick: ev.lick, mode: ev.mode, echo: ev.echo, shown: -1, cur: null, hits: 0 };
+      state.crNote = null;
+      $('cr').hidden = false;
+      $('cr-body').hidden = ev.mode === 'play' && !ev.echo; // nothing plays during your turn
+      $('cr-note').className = 'demo-note rest';
+      $('cr-note').textContent = ev.mode === 'listen' ? '–' : '';
+      $('cr-fing').innerHTML = '';
+      markDemo(null);
+      renderCr();
     }
   }
 
   // ---------- lesson demo ----------
   function startDemo(lesson) {
     state.demo = true;
+    if (lesson.demo.includes('echo') && !state.callResponse) {
+      state.callResponse = true; // an echo demo needs a call to answer
+      $('call-response').checked = true;
+    }
     band.setDemo({ kinds: lesson.demo, keyScale: keyScaleId() || 'blues' });
     band.callResponse = state.callResponse;
-    $('demo-now').hidden = false;
+    $('demo-now').hidden = lesson.demo.includes('echo'); // echoes show in the call & response box
+    if (!lesson.demo.includes('echo')) hidePhrase(); // other demos replace call & response
     $('demo-note').textContent = '–';
     $('demo-note').className = 'demo-note rest';
     $('demo-fing').innerHTML = '';
@@ -491,24 +589,61 @@
 
   // Light up the demo note. Fingering boxes match the exact written octave when shown.
   function markDemo(pc, wMidi = null) {
-    const exact = wMidi !== null && document.querySelector(`.fing[data-wmidi="${wMidi}"]`);
+    document.querySelectorAll('.passing').forEach((el) => el.remove());
     document.querySelectorAll('.chip, .staff .head, .fing').forEach((el) => {
-      const on = el.classList.contains('fing') && exact
-        ? Number(el.dataset.wmidi) === wMidi
+      const on = el.classList.contains('fing') && wMidi !== null
+        ? Number(el.dataset.wmidi) === wMidi // fingerings differ by octave: exact match only
         : pc !== null && Number(el.dataset.pc) === pc;
       el.classList.toggle('demo', on);
     });
+  }
+
+  // Spell a note against the scale on screen. A note outside it is a chromatic
+  // passing/approach note: spell it as the scale note below, raised (D# into E).
+  function spellAgainstScale(dispPc) {
+    const names = new Map([...document.querySelectorAll('#chips .chip:not(.passing)')].map((c) => [Number(c.dataset.pc), c.dataset.name]));
+    if (names.has(dispPc)) return { name: names.get(dispPc), inScale: true };
+    const below = names.get(mod(dispPc - 1, 12));
+    const raised = below && T.simplifyNote(below + '#');
+    return { name: raised && !['E#', 'B#'].includes(raised) ? raised : spell(dispPc), inScale: false };
+  }
+
+  // Make sure a sounding note is visible: a chromatic note that isn't in the scale
+  // gets a temporary dashed chip next to the note it leads into, and a note whose
+  // octave isn't in the fingering row gets a temporary fingering box.
+  function showNoteExtras(dispPc, name, wMidi, inScale) {
+    const label = inScale ? 'this octave' : 'passing';
+    if (!inScale) {
+      const chip = document.createElement('div');
+      chip.className = 'chip passing demo';
+      chip.innerHTML = '<b></b><small>passing</small>';
+      chip.firstChild.textContent = T.pretty(name);
+      const chips = $('chips');
+      chips.insertBefore(chip, chips.querySelector(`.chip[data-pc="${mod(dispPc + 1, 12)}"]`));
+    }
+    if (settings.instrument === 'concert' || $('fingerings-card').hidden) return;
+    if (document.querySelector(`.fing[data-wmidi="${wMidi}"]`)) return;
+    const box = document.createElement('div');
+    box.className = 'fing passing demo';
+    box.innerHTML = window.Fingering.svg(wMidi) + `<b></b><small>${label}</small>`;
+    box.querySelector('b').textContent = T.pretty(name) + (Math.floor(wMidi / 12) - 1);
+    const fings = $('fingerings');
+    const next = [...fings.querySelectorAll('.fing:not(.passing)')].find((f) => Number(f.dataset.wmidi) > wMidi);
+    fings.insertBefore(box, next || null);
   }
 
   function showDemoNote(ev) {
     state.demoNote = ev;
     const dispMidi = ev.midi + dispMidiOffset();
     const dispPc = mod(dispMidi, 12);
+    const wMidi = ev.midi + inst().octaveSemis;
+    const { name, inScale } = spellAgainstScale(dispPc);
     const el = $('demo-note');
-    el.innerHTML = `${T.pretty(spell(dispPc))}<sup>${Math.floor(dispMidi / 12) - 1}</sup>`;
+    el.innerHTML = `${T.pretty(name)}<sup>${Math.floor(dispMidi / 12) - 1}</sup>`;
     el.className = 'demo-note';
-    $('demo-fing').innerHTML = settings.instrument === 'concert' ? '' : window.Fingering.svg(ev.midi + inst().octaveSemis);
-    markDemo(dispPc, ev.midi + inst().octaveSemis);
+    $('demo-fing').innerHTML = settings.instrument === 'concert' ? '' : window.Fingering.svg(wMidi);
+    markDemo(dispPc, wMidi);
+    showNoteExtras(dispPc, name, wMidi, inScale);
   }
 
   function togglePlay() {
@@ -623,6 +758,13 @@
 
     if (state.heardPc !== dispPc) { state.heardPc = dispPc; markHeard(); }
 
+    const cr = state.cr;
+    if (cr && cr.mode === 'play' && !cr.echo && stableCount === 2 && cr.hits < cr.lick.length
+      && mod(cr.lick[cr.hits].midi, 12) === concertPc) {
+      cr.hits++;
+      renderCr();
+    }
+
     if (band.playing && !state.demo && !state.counting && state.bar >= 0) {
       stats.total++;
       if (sets.target.has(concertPc)) stats.target++;
@@ -655,6 +797,13 @@
     lastFrame = now;
     if (band.playing) {
       for (const ev of band.popEvents(band.ctx.currentTime)) handleEvent(ev);
+      if (state.crNote && band.ctx.currentTime > state.crNote.end) {
+        state.crNote = null;
+        if (state.cr) state.cr.cur = null;
+        $('cr-note').classList.add('rest');
+        markDemo(null);
+        renderCr();
+      }
       if (state.demoNote && band.ctx.currentTime > state.demoNote.end) {
         state.demoNote = null;
         $('demo-note').classList.add('rest');
@@ -745,7 +894,12 @@
     $('play').addEventListener('click', togglePlay);
     $('mic-btn').addEventListener('click', toggleMic);
     $('reset-stats').addEventListener('click', resetStats);
-    $('show-lick').addEventListener('click', () => { $('lick-notes').hidden = false; $('show-lick').hidden = true; });
+    $('cr-hide').checked = !!settings.crHide;
+    $('cr-hide').addEventListener('change', (e) => {
+      settings.crHide = e.target.checked;
+      saveSettings();
+      renderCr();
+    });
     $('free-practice').addEventListener('click', () => {
       settings.lessonId = null;
       saveSettings();

@@ -197,9 +197,10 @@ window.LESSONS = [
     demo: ['echo'],
     goal: 'Train your ear to hear and repeat phrases, the way players trade ideas.',
     steps: [
-      'The band plays a short phrase for 2 bars (LISTEN). Then you have 2 bars (YOUR TURN).',
-      'First echo only the rhythm on any note.',
-      'Then try to echo the exact notes. Use "Show notes" if you get stuck.',
+      'A trumpet plays a short phrase for 2 bars (LISTEN). Then you have 2 bars to play it back (YOUR TURN).',
+      'First echo only the rhythm, on any note.',
+      'Then echo the exact notes. The notes and fingerings appear as the trumpet plays them. With the mic on, each note you get right is ticked.',
+      'Once that feels easy, tick "Ear only" to hide the notes and work by ear.',
       'Advanced: answer the phrase instead of copying it — same rhythm, different notes.',
     ],
     tip: 'Sing the phrase back first. If you can sing it, you can play it.',
@@ -212,7 +213,7 @@ window.LESSONS = [
     demo: ['echo'],
     goal: 'Echo phrases that move through chord changes, so your ear learns how lines follow harmony.',
     steps: [
-      'Echo each phrase exactly. The phrases are built from chord tones on strong beats.',
+      'Echo each phrase exactly. The phrases are built from chord tones on strong beats. Tick "Ear only" to hide the notes.',
       'Transpose the echo: play it back one octave higher or lower.',
       'Echo the phrase, but end on a different chord tone.',
       'Answer with a phrase of your own that resolves to the 3rd of the I chord.',

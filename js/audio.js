@@ -89,6 +89,7 @@
       this.anticipated = false;
       this.events = [];
       this.demoCache = null;
+      this.lick = null;
       this.timer = setInterval(() => this.tick(), 25);
       this.tick();
     }
@@ -127,7 +128,9 @@
       const rest = [];
       for (const e of this.events) (e.time <= now ? due : rest).push(e);
       this.events = rest;
-      return due.sort((a, b) => a.time - b.time);
+      // At equal times, phrase changes go first so their notes land in the new phrase.
+      const rank = (e) => (e.type === 'phrase' ? 0 : 1);
+      return due.sort((a, b) => a.time - b.time || rank(a) - rank(b));
     }
 
     beatAt(pos) {
@@ -172,22 +175,26 @@
       if (b.beatInBar === 0) this.compBar(pos, t, bd);
       if (this.demo) this.scheduleDemo(pos, i, t, bd);
 
-      if (this.callResponse && b.beatInBar === 0) {
+      // Call & response: a trumpet plays a 2-bar call, then 2 bars for the answer.
+      // A lesson demo that isn't an echo demo takes over, so the two never overlap.
+      const echo = !!this.demo && this.demo.kinds.includes('echo');
+      if (this.callResponse && (!this.demo || echo) && b.beatInBar === 0) {
         const phase = globalBar % 4;
         if (phase === 0) {
           const lick = T.generateLick((e) => this.chordAt(pos + Math.floor(e / 2)), Math.random,
             this.leadRange[0], this.leadRange[1]);
-          const echo = this.demo && this.demo.kinds.includes('echo');
-          for (const n of lick) {
+          this.lick = lick;
+          this.events.push({ time: t, type: 'phrase', mode: 'listen', lick, echo });
+          lick.forEach((n, idx) => {
             const nt = t + Math.floor(n.eighth / 2) * bd + (n.eighth % 2 ? bd * this.swing : 0);
             const dur = (n.len * bd) / 2 * 0.9;
-            this.leadNote(n.midi, nt, dur, 'lead');
-            // Demo: the "student" sax answers with the same phrase two bars later.
-            if (echo) this.demoNote(n.midi, nt + 8 * bd, dur);
-          }
-          this.events.push({ time: t, type: 'phrase', mode: 'listen', lick });
-        } else if (phase === 2) {
-          this.events.push({ time: t, type: 'phrase', mode: 'play' });
+            this.leadNote(n.midi, nt, dur, 'lead', 'trumpet');
+            this.events.push({ time: nt, type: 'call', midi: n.midi, end: nt + dur, idx });
+            // Demo: the sax answers with the same phrase two bars later.
+            if (echo) this.demoNote(n.midi, nt + 8 * bd, dur, idx);
+          });
+        } else if (phase === 2 && this.lick) {
+          this.events.push({ time: t, type: 'phrase', mode: 'play', lick: this.lick, echo });
         }
       }
     }
@@ -221,9 +228,9 @@
       }
     }
 
-    demoNote(midi, t, dur) {
+    demoNote(midi, t, dur, idx = null) {
       this.leadNote(midi, t, dur, 'demo');
-      this.events.push({ time: t, type: 'demo', midi, end: t + dur });
+      this.events.push({ time: t, type: 'demo', midi, end: t + dur, idx });
     }
 
     compBar(pos, t, bd) {
@@ -302,28 +309,35 @@
       }
     }
 
-    // Reedy lead voice for call-and-response phrases and reference notes.
-    leadNote(m, t, dur, bus) {
+    // Lead voices: a reedy 'sax' (demo, reference notes) and a brassy, muted
+    // 'trumpet' for the call in call & response, so the two are easy to tell apart.
+    leadNote(m, t, dur, bus, voice = 'sax') {
       const ctx = this.ctx;
       const f = T.midiToFreq(m);
+      const trumpet = voice === 'trumpet';
       const o = ctx.createOscillator();
-      o.type = 'sawtooth';
-      o.frequency.value = f;
+      o.type = trumpet ? 'square' : 'sawtooth';
+      if (trumpet) {
+        o.frequency.setValueAtTime(f * 0.985, t); // slight scoop into the note
+        o.frequency.exponentialRampToValueAtTime(f, t + 0.05);
+      } else {
+        o.frequency.value = f;
+      }
       const lfo = ctx.createOscillator();
       lfo.frequency.value = 5.2;
       const lfoGain = ctx.createGain();
       lfoGain.gain.setValueAtTime(0, t);
-      lfoGain.gain.linearRampToValueAtTime(f * 0.004, t + Math.min(0.3, dur));
+      lfoGain.gain.linearRampToValueAtTime(trumpet ? 0 : f * 0.004, t + Math.min(0.3, dur));
       lfo.connect(lfoGain).connect(o.frequency);
       const lp = ctx.createBiquadFilter();
-      lp.type = 'lowpass';
-      lp.Q.value = 1.5;
-      lp.frequency.setValueAtTime(900, t);
-      lp.frequency.linearRampToValueAtTime(2400, t + 0.05);
-      lp.frequency.linearRampToValueAtTime(1600, t + 0.25);
+      lp.type = trumpet ? 'bandpass' : 'lowpass';
+      lp.Q.value = trumpet ? 0.9 : 1.5;
+      lp.frequency.setValueAtTime(trumpet ? 1400 : 900, t);
+      lp.frequency.linearRampToValueAtTime(trumpet ? 2200 : 2400, t + 0.05);
+      lp.frequency.linearRampToValueAtTime(trumpet ? 1700 : 1600, t + 0.25);
       const g = ctx.createGain();
       g.gain.setValueAtTime(0.0001, t);
-      g.gain.linearRampToValueAtTime(0.2, t + 0.03);
+      g.gain.linearRampToValueAtTime(trumpet ? 0.22 : 0.2, t + (trumpet ? 0.015 : 0.03));
       g.gain.setValueAtTime(0.16, t + Math.max(0.04, dur - 0.04));
       g.gain.linearRampToValueAtTime(0.0001, t + dur + 0.05);
       o.connect(lp).connect(g).connect(this.buses[bus]);
@@ -395,6 +409,50 @@
       o.connect(g).connect(this.buses.ref);
       o.start(t);
       o.stop(t + 0.07);
+    }
+
+    // Press-and-hold reference note (concert MIDI): sounds until the returned
+    // release function is called (a quick tap still gives a short note).
+    holdNote(m) {
+      this.ensureContext();
+      const ctx = this.ctx;
+      const t = ctx.currentTime + 0.01;
+      const f = T.midiToFreq(m);
+      const o = ctx.createOscillator();
+      o.type = 'sawtooth';
+      o.frequency.value = f;
+      const lfo = ctx.createOscillator();
+      lfo.frequency.value = 5.2;
+      const lfoGain = ctx.createGain();
+      lfoGain.gain.setValueAtTime(0, t);
+      lfoGain.gain.setValueAtTime(0, t + 0.3);
+      lfoGain.gain.linearRampToValueAtTime(f * 0.004, t + 0.7); // vibrato blooms on long notes
+      lfo.connect(lfoGain).connect(o.frequency);
+      const lp = ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.Q.value = 1.5;
+      lp.frequency.setValueAtTime(900, t);
+      lp.frequency.linearRampToValueAtTime(2400, t + 0.05);
+      lp.frequency.linearRampToValueAtTime(1600, t + 0.25);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(0.2, t + 0.03);
+      g.gain.linearRampToValueAtTime(0.16, t + 0.3);
+      const bus = this.buses.ref;
+      o.connect(lp).connect(g).connect(bus);
+      o.start(t);
+      lfo.start(t);
+      let released = false;
+      return () => {
+        if (released) return;
+        released = true;
+        const end = Math.max(ctx.currentTime, t + 0.25);
+        if (g.gain.cancelAndHoldAtTime) g.gain.cancelAndHoldAtTime(end);
+        else { g.gain.cancelScheduledValues(end); g.gain.setValueAtTime(0.16, end); }
+        g.gain.linearRampToValueAtTime(0.0001, end + 0.08);
+        o.stop(end + 0.1);
+        lfo.stop(end + 0.1);
+      };
     }
 
     // Play reference notes (concert MIDI) on the lead voice, e.g. a clicked scale note.

@@ -24,7 +24,7 @@ The app is static files with no backend. To put it on GitHub Pages, push the rep
   - Choose from 8 progressions: ii–V–I, minor ii–V–i, 12-bar blues, minor blues, a turnaround, an Autumn-style cycle, and Dorian and dominant vamps.
   - Any key, tempo from 40 to 260 bpm, swing feel, count-in, and a mute for each part.
 - **Written pitch for your sax.** Pick alto, tenor, soprano or baritone, and chords and scales are shown in *your* key. For example, a concert B♭ blues shows as G blues on alto and C blues on tenor. You can switch to concert pitch at any time.
-- **"Play these notes" panel.** Shows the scale that fits the current chord on a staff and as note chips, with the target notes, chord tones and scale notes highlighted. Click a note to hear it.
+- **"Play these notes" panel.** Shows the scale that fits the current chord on a staff and as note chips, with the target notes, chord tones and scale notes highlighted. Press and hold a note (or its fingering diagram) to hear it for as long as you hold.
 - **Fingering diagrams.** Shows the keys to press for every note in the "Play these notes" panel, and for the note you're playing when the mic is on. Fingerings follow written pitch, so they're the same on every saxophone.
 - **23 guided lessons** in five groups:
   - *Foundations:* long tones, roots, arpeggios, 1-2-3-5 patterns, guide tones, chromatic approach notes.
